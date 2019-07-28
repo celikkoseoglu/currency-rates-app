@@ -36,6 +36,6 @@ internal class CurrencyPresenter(private val currencyRepository: CurrencyReposit
 
         fun onCurrencyClicked(): Observable<Currency>
 
-        fun onRefreshAction(): Observable<Any>
+        fun onRefreshAction(): Observable<Long>
     }
 }

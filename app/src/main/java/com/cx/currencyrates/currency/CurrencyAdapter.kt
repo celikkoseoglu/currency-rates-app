@@ -41,6 +41,16 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
         notifyDataSetChanged()
     }
 
+    fun moveItem(from: Int, to: Int) {
+        val fromEmoji = currencies[from]
+        currencies.removeAt(from)
+        if (to < from) {
+            currencies.add(to, fromEmoji)
+        } else {
+            currencies.add(to - 1, fromEmoji)
+        }
+    }
+
     inner class CurrencyViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         @BindView(R.id.currency_name)
         lateinit var headline: TextView
