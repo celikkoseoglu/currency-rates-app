@@ -7,6 +7,8 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import android.widget.TextView
 import butterknife.BindView
 import butterknife.ButterKnife
@@ -41,7 +43,6 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
                 this.currencies.first { currency -> currency.name == newCurrency.name }.value = newCurrency.value
             }
         } else {
-            this.currencies.clear()
             this.currencies.addAll(currencies)
         }
         notifyDataSetChanged()
@@ -50,15 +51,18 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
     fun moveCurrencyToTop(currency: Currency) {
         val currencyToMoveIndex = currencies.indexOfFirst { currency.name == it.name }
         moveItem(currencyToMoveIndex, 0)
+        notifyDataSetChanged()
     }
 
     fun moveItem(from: Int, to: Int) {
-        val fromCurrency = currencies[from]
-        currencies.removeAt(from)
-        if (to < from) {
-            currencies.add(to, fromCurrency)
-        } else {
-            currencies.add(to - 1, fromCurrency)
+        if (from != to) {
+            val fromCurrency = currencies[from]
+            currencies.removeAt(from)
+            if (to < from) {
+                currencies.add(to, fromCurrency)
+            } else {
+                currencies.add(to - 1, fromCurrency)
+            }
         }
     }
 
@@ -67,18 +71,19 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
         lateinit var headline: TextView
 
         @BindView(R.id.currency_value)
-        lateinit var subtitle: TextView
+        lateinit var subtitle: EditText
 
         init {
             view.setOnClickListener {
                 mViewClickSubject.onNext(currencies[layoutPosition])
+                subtitle.requestFocus()
             }
         }
 
         fun bind(currency: Currency) {
             ButterKnife.bind(this, itemView)
             headline.text = Flag.from(currency.name).value + " " + currency.name
-            subtitle.text = currency.value.toString()
+            subtitle.setText(currency.value.toString())
 
             subtitle.addTextChangedListener(object : TextWatcher {
                 override fun afterTextChanged(p0: Editable?) {
@@ -90,9 +95,18 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
                 }
 
                 override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-                    println("Update numbers!!!")
+                    if (subtitle.hasFocus()) {
+                        println("Update numbers!!!")
+                    }
                 }
             })
+
+            subtitle.setOnFocusChangeListener { v, hasFocus ->
+                if (hasFocus) {
+                    (context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                            .toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY)
+                }
+            }
         }
     }
 }

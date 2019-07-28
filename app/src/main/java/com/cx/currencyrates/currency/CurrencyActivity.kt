@@ -86,6 +86,9 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
     override fun onRefreshAction(): Observable<Long> {
         return datasetObservable
     }
+    override fun setRefreshing(refresh: Boolean) {
+        refreshing = refresh
+    }
 
     override fun showRefreshing(isRefreshing: Boolean) {
         // TODO have a small refreshing indicator somewhere

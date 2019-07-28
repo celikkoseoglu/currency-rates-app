@@ -24,6 +24,7 @@ internal class CurrencyPresenter(private val currencyRepository: CurrencyReposit
 
         addToUnsubscribe(view.onCurrencyClicked()
                 .subscribe {
+                    view.setRefreshing(false)
                     view.editCurrencyValue(it)
                 }
         )
@@ -39,5 +40,7 @@ internal class CurrencyPresenter(private val currencyRepository: CurrencyReposit
         fun onRefreshAction(): Observable<Long>
 
         fun editCurrencyValue(currency: Currency)
+
+        fun setRefreshing(refresh: Boolean)
     }
 }
