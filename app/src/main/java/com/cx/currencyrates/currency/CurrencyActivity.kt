@@ -25,6 +25,9 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
 
     private lateinit var presenter: CurrencyPresenter
     private lateinit var adapter: CurrencyAdapter
+    private lateinit var datasetObservable: Observable<Long>
+
+    private var refreshing = true
 
     private val itemTouchHelper by lazy {
         ItemTouchHelper(object : SimpleCallback(UP or DOWN or START or END, 0) {
@@ -34,15 +37,20 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
                 val to = target.adapterPosition
                 adapter.moveItem(from, to)
                 adapter.notifyItemMoved(from, to)
+                refreshing = true
                 return true
             }
 
-            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {}
+            override fun onSwiped(p0: RecyclerView.ViewHolder, p1: Int) {}
         })
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        datasetObservable = Observable.interval(1, TimeUnit.SECONDS).takeWhile { refreshing }.doOnNext {
+            recyclerView.announceForAccessibility(getString(R.string.refreshing_currency_values))
+        }
 
         setContentView(R.layout.activity_currency_list)
 
@@ -55,7 +63,6 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
 
         presenter = CXApp.from(applicationContext).inject()
         presenter.register(this)
-
         itemTouchHelper.attachToRecyclerView(recyclerView)
     }
 
@@ -68,14 +75,16 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
         adapter.showCurrencies(currencies)
     }
 
+    override fun editCurrencyValue(currency: Currency) {
+        adapter.moveCurrencyToTop(currency)
+    }
+
     override fun onCurrencyClicked(): Observable<Currency> {
         return adapter.mViewClickSubject
     }
 
     override fun onRefreshAction(): Observable<Long> {
-        return Observable.interval(1, TimeUnit.SECONDS).doOnNext {
-            recyclerView.announceForAccessibility(getString(R.string.refreshing_currency_values))
-        }
+        return datasetObservable
     }
 
     override fun showRefreshing(isRefreshing: Boolean) {

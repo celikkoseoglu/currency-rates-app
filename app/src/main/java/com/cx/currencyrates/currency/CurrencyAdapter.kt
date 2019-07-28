@@ -36,18 +36,29 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
     override fun getItemCount() = currencies.size
 
     fun showCurrencies(currencies: List<Currency>) {
-        this.currencies.clear()
-        this.currencies.addAll(currencies)
+        if (this.currencies.isNotEmpty()) {
+            currencies.forEach { newCurrency ->
+                this.currencies.first { currency -> currency.name == newCurrency.name }.value = newCurrency.value
+            }
+        } else {
+            this.currencies.clear()
+            this.currencies.addAll(currencies)
+        }
         notifyDataSetChanged()
     }
 
+    fun moveCurrencyToTop(currency: Currency) {
+        val currencyToMoveIndex = currencies.indexOfFirst { currency.name == it.name }
+        moveItem(currencyToMoveIndex, 0)
+    }
+
     fun moveItem(from: Int, to: Int) {
-        val fromEmoji = currencies[from]
+        val fromCurrency = currencies[from]
         currencies.removeAt(from)
         if (to < from) {
-            currencies.add(to, fromEmoji)
+            currencies.add(to, fromCurrency)
         } else {
-            currencies.add(to - 1, fromEmoji)
+            currencies.add(to - 1, fromCurrency)
         }
     }
 
