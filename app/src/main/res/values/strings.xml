@@ -1,4 +1,4 @@
 <resources>
     <string name="app_name">Currency Exchange</string>
-    <string name="refresh_view_icon_accessibility">refreshing view</string>
+    <string name="refreshing_currency_values">refreshing currency values</string>
 </resources>

@@ -1,7 +1,6 @@
 package com.cx.currencyrates.currency
 
 import android.os.Bundle
-import android.support.v4.widget.SwipeRefreshLayout
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
@@ -74,12 +73,9 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
     }
 
     override fun onRefreshAction(): Observable<Long> {
-
-        return Observable.interval(2, TimeUnit.SECONDS)
-
-//        return Observable.create<Any> {
-//            recyclerView.announceForAccessibility(getString(R.string.refresh_view_icon_accessibility))
-//        }.startWith { }
+        return Observable.interval(1, TimeUnit.SECONDS).doOnNext {
+            recyclerView.announceForAccessibility(getString(R.string.refreshing_currency_values))
+        }
     }
 
     override fun showRefreshing(isRefreshing: Boolean) {
