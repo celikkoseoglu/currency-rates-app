@@ -14,12 +14,15 @@ import butterknife.BindView
 import butterknife.ButterKnife
 import com.cx.currencyrates.R
 import com.cx.currencyrates.currency.model.Currency
+import com.cx.currencyrates.currency.model.CurrencyUtils
 import com.cx.currencyrates.currency.model.Flag
 import io.reactivex.subjects.PublishSubject
 
 internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private val currencies = ArrayList<Currency>()
+
+    private val currencyUtils = CurrencyUtils()
 
     val mViewClickSubject: PublishSubject<Currency> = PublishSubject.create()
 
@@ -38,8 +41,17 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
     override fun getItemCount() = currencies.size
 
     fun showCurrencies(currencies: List<Currency>) {
+
+        currencyUtils.currencyRatios = currencies
+
         if (this.currencies.isNotEmpty()) {
+
+            //val processedList = currencyUtils.processCurrencies(currencies)
+
+
             currencies.forEach { newCurrency ->
+                // instead of setting it the value coming from the server, send server value to util class and get the updated value..
+                // also, don't update the zeroth value since it is the reference value
                 this.currencies.first { currency -> currency.name == newCurrency.name }.value = newCurrency.value
             }
         } else {
@@ -83,7 +95,7 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
         fun bind(currency: Currency) {
             ButterKnife.bind(this, itemView)
             headline.text = Flag.from(currency.name).value + " " + currency.name
-            subtitle.setText(currency.value.toString())
+            subtitle.setText(String.format("%.4f", currency.value))
 
             subtitle.addTextChangedListener(object : TextWatcher {
                 override fun afterTextChanged(p0: Editable?) {
@@ -96,7 +108,19 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
 
                 override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
                     if (subtitle.hasFocus()) {
+                        // text should't be changing for the reference value
+                        // update the list with the new value of the EditText
+                        currencies[0].value = subtitle.text.toString().toDouble() // this needs error handling, or we could force a number input only
                         println("Update numbers!!!")
+
+
+                        val processedCurrencies = currencyUtils.processCurrencies(currencies)
+                        currencies.clear()
+                        currencies.addAll(processedCurrencies)
+
+                        notifyItemRangeChanged(1, currencies.size)
+
+                        // currency utils to be called here as well. Right after an event, update values
                     }
                 }
             })
