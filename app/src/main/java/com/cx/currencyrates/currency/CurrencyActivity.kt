@@ -13,6 +13,7 @@ import com.cx.currencyrates.CXApp
 import com.cx.currencyrates.R
 import com.cx.currencyrates.currency.model.Currency
 import io.reactivex.Observable
+import io.reactivex.subjects.PublishSubject
 import java.util.concurrent.TimeUnit
 
 class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
@@ -27,8 +28,6 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
     private lateinit var adapter: CurrencyAdapter
     private lateinit var datasetObservable: Observable<Long>
 
-    private var refreshing = true
-
     private val itemTouchHelper by lazy {
         ItemTouchHelper(object : SimpleCallback(UP or DOWN or START or END, 0) {
 
@@ -37,7 +36,6 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
                 val to = target.adapterPosition
                 adapter.moveItem(from, to)
                 adapter.notifyItemMoved(from, to)
-                refreshing = true
                 return true
             }
 
@@ -48,7 +46,7 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        datasetObservable = Observable.interval(1, TimeUnit.SECONDS).takeWhile { refreshing }.doOnNext {
+        datasetObservable = Observable.interval(1, TimeUnit.SECONDS).doOnNext {
             recyclerView.announceForAccessibility(getString(R.string.refreshing_currency_values))
         }
 
@@ -71,6 +69,10 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
         super.onDestroy()
     }
 
+    override fun updateCurrencies(currencies: List<Currency>) {
+        adapter.updateCurrencies(currencies)
+    }
+
     override fun showCurrencies(currencies: List<Currency>) {
         adapter.showCurrencies(currencies)
     }
@@ -85,9 +87,6 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
 
     override fun onRefreshAction(): Observable<Long> {
         return datasetObservable
-    }
-    override fun setRefreshing(refresh: Boolean) {
-        refreshing = refresh
     }
 
     override fun showRefreshing(isRefreshing: Boolean) {

@@ -14,15 +14,12 @@ import butterknife.BindView
 import butterknife.ButterKnife
 import com.cx.currencyrates.R
 import com.cx.currencyrates.currency.model.Currency
-import com.cx.currencyrates.currency.model.CurrencyUtils
 import com.cx.currencyrates.currency.model.Flag
 import io.reactivex.subjects.PublishSubject
 
 internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private val currencies = ArrayList<Currency>()
-
-    private val currencyUtils = CurrencyUtils()
 
     val mViewClickSubject: PublishSubject<Currency> = PublishSubject.create()
 
@@ -40,30 +37,25 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
 
     override fun getItemCount() = currencies.size
 
-    fun showCurrencies(currencies: List<Currency>) {
-
-        currencyUtils.currencyRatios = currencies
-
+    fun updateCurrencies(currencies: List<Currency>) {
         if (this.currencies.isNotEmpty()) {
-
-            //val processedList = currencyUtils.processCurrencies(currencies)
-
-
-            currencies.forEach { newCurrency ->
-                // instead of setting it the value coming from the server, send server value to util class and get the updated value..
-                // also, don't update the zeroth value since it is the reference value
-                this.currencies.first { currency -> currency.name == newCurrency.name }.value = newCurrency.value
-            }
+            mViewClickSubject.onNext(this.currencies[0])
         } else {
             this.currencies.addAll(currencies)
+            notifyDataSetChanged()
         }
-        notifyDataSetChanged()
+    }
+
+    fun showCurrencies(currencies: List<Currency>) {
+        currencies.forEach { newCurrency ->
+            this.currencies.first { currency -> currency.name == newCurrency.name }.value = newCurrency.value
+        }
+        notifyItemRangeChanged(1, currencies.size)
     }
 
     fun moveCurrencyToTop(currency: Currency) {
         val currencyToMoveIndex = currencies.indexOfFirst { currency.name == it.name }
         moveItem(currencyToMoveIndex, 0)
-        notifyDataSetChanged()
     }
 
     fun moveItem(from: Int, to: Int) {
@@ -75,6 +67,7 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
             } else {
                 currencies.add(to - 1, fromCurrency)
             }
+            notifyDataSetChanged()
         }
     }
 
@@ -86,6 +79,7 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
         lateinit var subtitle: EditText
 
         init {
+
             view.setOnClickListener {
                 mViewClickSubject.onNext(currencies[layoutPosition])
                 subtitle.requestFocus()
@@ -93,6 +87,7 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
         }
 
         fun bind(currency: Currency) {
+
             ButterKnife.bind(this, itemView)
             headline.text = Flag.from(currency.name).value + " " + currency.name
             subtitle.setText(String.format("%.4f", currency.value))
@@ -108,19 +103,16 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
 
                 override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
                     if (subtitle.hasFocus()) {
-                        // text should't be changing for the reference value
-                        // update the list with the new value of the EditText
-                        currencies[0].value = subtitle.text.toString().toDouble() // this needs error handling, or we could force a number input only
-                        println("Update numbers!!!")
 
+                        // somehow we need to send the new values off to the presenter
+                        // can I just use the existing PublishSubject?
 
-                        val processedCurrencies = currencyUtils.processCurrencies(currencies)
-                        currencies.clear()
-                        currencies.addAll(processedCurrencies)
+                        currencies.first().value = subtitle.text.toString().toDouble() // this needs error handling, or we could force a number input only
+                        mViewClickSubject.onNext(currencies.first())
 
-                        notifyItemRangeChanged(1, currencies.size)
+                        // we don't really need to pass the whole list of currencies here. Only one should be enough
+                        // it could probably locate the one it needs using the name
 
-                        // currency utils to be called here as well. Right after an event, update values
                     }
                 }
             })

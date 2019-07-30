@@ -26,5 +26,6 @@ open class BasePresenter<in V : BasePresenterView> {
     @CallSuper
     protected fun addToUnsubscribe(disposable: Disposable) {
         disposables.add(disposable)
+        // could probably use uber's autodisposable library here
     }
 }
