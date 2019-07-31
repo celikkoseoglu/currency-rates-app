@@ -16,14 +16,24 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="?attr/colorPrimary"
-            app:titleTextColor="@color/white"/>
+            app:titleTextColor="@color/white">
+
+            <ProgressBar
+                android:id="@+id/refresh_indicator"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="end"
+                android:layout_marginEnd="18dp"
+                android:indeterminateTint="@color/white" />
+
+        </android.support.v7.widget.Toolbar>
 
         <android.support.v7.widget.RecyclerView
             android:id="@+id/currencies_recyclerview"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:paddingBottom="10dp"
-            android:clipToPadding="false" />
+            android:clipToPadding="false"
+            android:paddingBottom="10dp" />
     </LinearLayout>
 
 </LinearLayout>

@@ -4,15 +4,20 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.support.v7.widget.SimpleItemAnimator
 import android.support.v7.widget.Toolbar
 import android.support.v7.widget.helper.ItemTouchHelper
 import android.support.v7.widget.helper.ItemTouchHelper.*
+import android.view.View
+import android.widget.ProgressBar
 import butterknife.BindView
 import butterknife.ButterKnife
 import com.cx.currencyrates.CXApp
 import com.cx.currencyrates.R
 import com.cx.currencyrates.currency.model.Currency
 import io.reactivex.Observable
+import io.reactivex.subjects.PublishSubject
+import java.lang.IllegalArgumentException
 import java.util.concurrent.TimeUnit
 
 class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
@@ -23,11 +28,12 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
     @BindView(R.id.currencies_recyclerview)
     lateinit var recyclerView: RecyclerView
 
+    @BindView(R.id.refresh_indicator)
+    lateinit var refreshingIndicator: ProgressBar
+
     private lateinit var presenter: CurrencyPresenter
     private lateinit var adapter: CurrencyAdapter
     private lateinit var datasetObservable: Observable<Long>
-
-    private var refreshing = true
 
     private val itemTouchHelper by lazy {
         ItemTouchHelper(object : SimpleCallback(UP or DOWN or START or END, 0) {
@@ -37,7 +43,6 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
                 val to = target.adapterPosition
                 adapter.moveItem(from, to)
                 adapter.notifyItemMoved(from, to)
-                refreshing = true
                 return true
             }
 
@@ -48,7 +53,7 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        datasetObservable = Observable.interval(1, TimeUnit.SECONDS).takeWhile { refreshing }.doOnNext {
+        datasetObservable = Observable.interval(1, TimeUnit.SECONDS).doOnNext {
             recyclerView.announceForAccessibility(getString(R.string.refreshing_currency_values))
         }
 
@@ -58,8 +63,12 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
         setSupportActionBar(toolbar)
 
         adapter = CurrencyAdapter(this)
+
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
+        (recyclerView.itemAnimator as? SimpleItemAnimator
+                ?: throw IllegalArgumentException("RecyclerView animator is not of type SimpleItemAnimator"))
+                .supportsChangeAnimations = false
 
         presenter = CXApp.from(applicationContext).inject()
         presenter.register(this)
@@ -69,6 +78,10 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
     override fun onDestroy() {
         presenter.unregister()
         super.onDestroy()
+    }
+
+    override fun updateCurrencies(currencies: List<Currency>) {
+        adapter.updateCurrencies(currencies)
     }
 
     override fun showCurrencies(currencies: List<Currency>) {
@@ -86,11 +99,16 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
     override fun onRefreshAction(): Observable<Long> {
         return datasetObservable
     }
-    override fun setRefreshing(refresh: Boolean) {
-        refreshing = refresh
-    }
 
     override fun showRefreshing(isRefreshing: Boolean) {
-        // TODO have a small refreshing indicator somewhere
+        refreshingIndicator.setVisibleOrGone(isRefreshing)
     }
 }
+
+fun View.setVisibleOrGone(predicate: Boolean) {
+    if (predicate)
+        this.visibility = View.VISIBLE
+    else
+        this.visibility = View.GONE
+}
+
