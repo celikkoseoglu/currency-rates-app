@@ -79,7 +79,6 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
         lateinit var subtitle: EditText
 
         init {
-
             view.setOnClickListener {
                 mViewClickSubject.onNext(currencies[layoutPosition])
                 subtitle.requestFocus()
@@ -93,31 +92,17 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
             subtitle.setText(String.format("%.4f", currency.value))
 
             subtitle.addTextChangedListener(object : TextWatcher {
-                override fun afterTextChanged(p0: Editable?) {
-
-                }
-
-                override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-
-                }
-
+                override fun afterTextChanged(p0: Editable?) {}
+                override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
                 override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
                     if (subtitle.hasFocus()) {
-
-                        // somehow we need to send the new values off to the presenter
-                        // can I just use the existing PublishSubject?
-
                         currencies.first().value = subtitle.text.toString().toDouble() // this needs error handling, or we could force a number input only
                         mViewClickSubject.onNext(currencies.first())
-
-                        // we don't really need to pass the whole list of currencies here. Only one should be enough
-                        // it could probably locate the one it needs using the name
-
                     }
                 }
             })
 
-            subtitle.setOnFocusChangeListener { v, hasFocus ->
+            subtitle.setOnFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {
                     (context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
                             .toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY)

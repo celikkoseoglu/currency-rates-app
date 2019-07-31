@@ -4,9 +4,12 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.support.v7.widget.SimpleItemAnimator
 import android.support.v7.widget.Toolbar
 import android.support.v7.widget.helper.ItemTouchHelper
 import android.support.v7.widget.helper.ItemTouchHelper.*
+import android.view.View
+import android.widget.ProgressBar
 import butterknife.BindView
 import butterknife.ButterKnife
 import com.cx.currencyrates.CXApp
@@ -14,6 +17,7 @@ import com.cx.currencyrates.R
 import com.cx.currencyrates.currency.model.Currency
 import io.reactivex.Observable
 import io.reactivex.subjects.PublishSubject
+import java.lang.IllegalArgumentException
 import java.util.concurrent.TimeUnit
 
 class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
@@ -23,6 +27,9 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
 
     @BindView(R.id.currencies_recyclerview)
     lateinit var recyclerView: RecyclerView
+
+    @BindView(R.id.refresh_indicator)
+    lateinit var refreshingIndicator: ProgressBar
 
     private lateinit var presenter: CurrencyPresenter
     private lateinit var adapter: CurrencyAdapter
@@ -56,8 +63,12 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
         setSupportActionBar(toolbar)
 
         adapter = CurrencyAdapter(this)
+
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
+        (recyclerView.itemAnimator as? SimpleItemAnimator
+                ?: throw IllegalArgumentException("RecyclerView animator is not of type SimpleItemAnimator"))
+                .supportsChangeAnimations = false
 
         presenter = CXApp.from(applicationContext).inject()
         presenter.register(this)
@@ -90,6 +101,14 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
     }
 
     override fun showRefreshing(isRefreshing: Boolean) {
-        // TODO have a small refreshing indicator somewhere
+        refreshingIndicator.setVisibleOrGone(isRefreshing)
     }
 }
+
+fun View.setVisibleOrGone(predicate: Boolean) {
+    if (predicate)
+        this.visibility = View.VISIBLE
+    else
+        this.visibility = View.GONE
+}
+

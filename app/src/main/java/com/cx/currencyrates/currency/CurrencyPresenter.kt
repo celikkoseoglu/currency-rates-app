@@ -18,7 +18,7 @@ internal class CurrencyPresenter(private val currencyRepository: CurrencyReposit
 
         // TODO: error handling
         addToUnsubscribe(view.onRefreshAction()
-                .doOnNext { view.showRefreshing(true) }
+//                .doOnNext { view.showRefreshing(true) }
                 .switchMapSingle { currencyRepository.currencyRates().subscribeOn(Schedulers.io()) }
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { currencyRatios ->
