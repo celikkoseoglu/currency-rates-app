@@ -40,6 +40,8 @@
             android:textStyle="bold"
             android:maxLines="1"
             android:layout_weight="1"
+            android:inputType="numberDecimal"
+            android:hint="0"
             android:gravity="right"/>
 
     </LinearLayout>

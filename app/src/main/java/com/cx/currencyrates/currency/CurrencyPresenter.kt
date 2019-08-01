@@ -1,13 +1,16 @@
 package com.cx.currencyrates.currency
 
-import com.cx.currencyrates.currency.model.Currency
+import android.os.Handler
+import android.os.Looper
 import com.cx.currencyrates.common.BasePresenter
 import com.cx.currencyrates.common.BasePresenterView
+import com.cx.currencyrates.currency.model.Currency
 import com.cx.currencyrates.currency.model.CurrencyUtils
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
-import io.reactivex.subjects.PublishSubject
+import java.net.UnknownHostException
+import java.util.concurrent.TimeUnit
 
 internal class CurrencyPresenter(private val currencyRepository: CurrencyRepository) : BasePresenter<CurrencyPresenter.View>() {
 
@@ -18,21 +21,25 @@ internal class CurrencyPresenter(private val currencyRepository: CurrencyReposit
 
         // TODO: error handling
         addToUnsubscribe(view.onRefreshAction()
-//                .doOnNext { view.showRefreshing(true) }
+                .doOnNext { Handler(Looper.getMainLooper()).post { view.showRefreshing(true) } }
                 .switchMapSingle { currencyRepository.currencyRates().subscribeOn(Schedulers.io()) }
+                .retryWhen { t -> t.delay(2, TimeUnit.SECONDS) }
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe { currencyRatios ->
                     currencyUtils.currencyRatios = currencyRatios
                     view.updateCurrencies(currencyRatios)
                     view.showRefreshing(false)
-                })
+                }
+        )
 
         addToUnsubscribe(view.onCurrencyClicked()
-                .subscribe {updatedCurrency ->
+                .subscribe({ updatedCurrency ->
                     val processedCurrencies = currencyUtils.processCurrencies(updatedCurrency)
                     view.showCurrencies(processedCurrencies)
                     view.editCurrencyValue(updatedCurrency)
-                }
+                }, { error ->
+                    println(error)
+                })
         )
     }
 

@@ -53,7 +53,7 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        datasetObservable = Observable.interval(1, TimeUnit.SECONDS).doOnNext {
+        datasetObservable = Observable.interval(0, 1, TimeUnit.SECONDS).doOnNext {
             recyclerView.announceForAccessibility(getString(R.string.refreshing_currency_values))
         }
 

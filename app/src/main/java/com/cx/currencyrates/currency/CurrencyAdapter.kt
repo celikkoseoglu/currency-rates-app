@@ -16,6 +16,7 @@ import com.cx.currencyrates.R
 import com.cx.currencyrates.currency.model.Currency
 import com.cx.currencyrates.currency.model.Flag
 import io.reactivex.subjects.PublishSubject
+import java.lang.NumberFormatException
 
 internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -96,8 +97,18 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
                 override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
                 override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
                     if (subtitle.hasFocus()) {
-                        currencies.first().value = subtitle.text.toString().toDouble() // this needs error handling, or we could force a number input only
-                        mViewClickSubject.onNext(currencies.first())
+
+                        try {
+                            currencies.first().value = subtitle.text.toString().toDouble()
+                        }
+                        catch (e: NumberFormatException) {
+                            currencies.first().value = 0.0
+                        }
+                        finally {
+                            mViewClickSubject.onNext(currencies.first())
+                        }
+
+
                     }
                 }
             })
