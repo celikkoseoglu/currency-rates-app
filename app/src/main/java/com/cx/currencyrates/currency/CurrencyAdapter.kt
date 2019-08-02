@@ -22,7 +22,8 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
 
     private val currencies = ArrayList<Currency>()
 
-    val mViewClickSubject: PublishSubject<Currency> = PublishSubject.create()
+    val updateSubject: PublishSubject<Currency> = PublishSubject.create()
+    val clickSubject: PublishSubject<Currency> = PublishSubject.create()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val layoutInflater = LayoutInflater.from(context)
@@ -40,7 +41,7 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
 
     fun updateCurrencies(currencies: List<Currency>) {
         if (this.currencies.isNotEmpty()) {
-            mViewClickSubject.onNext(this.currencies[0])
+            updateSubject.onNext(this.currencies[0])
         } else {
             this.currencies.addAll(currencies)
             notifyDataSetChanged()
@@ -63,10 +64,9 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
         if (from != to) {
             val fromCurrency = currencies[from]
             currencies.removeAt(from)
-            if (to < from) {
-                currencies.add(to, fromCurrency)
-            } else {
-                currencies.add(to - 1, fromCurrency)
+            when {
+                to < from -> currencies.add(to, fromCurrency)
+                else -> currencies.add(to - 1, fromCurrency)
             }
             notifyDataSetChanged()
         }
@@ -81,40 +81,33 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
 
         init {
             view.setOnClickListener {
-                mViewClickSubject.onNext(currencies[layoutPosition])
                 subtitle.requestFocus()
             }
         }
 
         fun bind(currency: Currency) {
-
             ButterKnife.bind(this, itemView)
             headline.text = Flag.from(currency.name).value + " " + currency.name
             subtitle.setText(String.format("%.4f", currency.value))
-
             subtitle.addTextChangedListener(object : TextWatcher {
                 override fun afterTextChanged(p0: Editable?) {}
                 override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
                 override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
                     if (subtitle.hasFocus()) {
-
                         try {
                             currencies.first().value = subtitle.text.toString().toDouble()
-                        }
-                        catch (e: NumberFormatException) {
+                        } catch (e: NumberFormatException) {
                             currencies.first().value = 0.0
+                        } finally {
+                            updateSubject.onNext(currencies.first())
                         }
-                        finally {
-                            mViewClickSubject.onNext(currencies.first())
-                        }
-
-
                     }
                 }
             })
 
             subtitle.setOnFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {
+                    clickSubject.onNext(currencies[layoutPosition])
                     (context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
                             .toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY)
                 }

@@ -32,14 +32,17 @@ internal class CurrencyPresenter(private val currencyRepository: CurrencyReposit
                 }
         )
 
-        addToUnsubscribe(view.onCurrencyClicked()
-                .subscribe({ updatedCurrency ->
+        addToUnsubscribe(view.onCurrencyUpdated()
+                .subscribe { updatedCurrency ->
                     val processedCurrencies = currencyUtils.processCurrencies(updatedCurrency)
                     view.showCurrencies(processedCurrencies)
-                    view.editCurrencyValue(updatedCurrency)
-                }, { error ->
-                    println(error)
-                })
+                }
+        )
+
+        addToUnsubscribe(view.onCurrencyClicked()
+                .subscribe { clickedCurrency ->
+                    view.editCurrencyValue(clickedCurrency)
+                }
         )
     }
 
@@ -49,6 +52,8 @@ internal class CurrencyPresenter(private val currencyRepository: CurrencyReposit
         fun updateCurrencies(currencies: List<Currency>)
 
         fun showCurrencies(currencies: List<Currency>)
+
+        fun onCurrencyUpdated(): Observable<Currency>
 
         fun onCurrencyClicked(): Observable<Currency>
 

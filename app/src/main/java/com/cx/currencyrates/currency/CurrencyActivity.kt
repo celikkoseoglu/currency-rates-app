@@ -1,5 +1,6 @@
 package com.cx.currencyrates.currency
 
+import android.content.Context
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
@@ -9,6 +10,8 @@ import android.support.v7.widget.Toolbar
 import android.support.v7.widget.helper.ItemTouchHelper
 import android.support.v7.widget.helper.ItemTouchHelper.*
 import android.view.View
+import android.view.WindowManager
+import android.view.inputmethod.InputMethodManager
 import android.widget.ProgressBar
 import butterknife.BindView
 import butterknife.ButterKnife
@@ -16,8 +19,6 @@ import com.cx.currencyrates.CXApp
 import com.cx.currencyrates.R
 import com.cx.currencyrates.currency.model.Currency
 import io.reactivex.Observable
-import io.reactivex.subjects.PublishSubject
-import java.lang.IllegalArgumentException
 import java.util.concurrent.TimeUnit
 
 class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
@@ -53,6 +54,8 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        this.window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+
         datasetObservable = Observable.interval(0, 1, TimeUnit.SECONDS).doOnNext {
             recyclerView.announceForAccessibility(getString(R.string.refreshing_currency_values))
         }
@@ -73,6 +76,18 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
         presenter = CXApp.from(applicationContext).inject()
         presenter.register(this)
         itemTouchHelper.attachToRecyclerView(recyclerView)
+
+
+        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                if (dy > 0) {
+                    recyclerView.clearFocus()
+                    (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                            .hideSoftInputFromWindow(recyclerView.windowToken, 0)
+                }
+            }
+        })
     }
 
     override fun onDestroy() {
@@ -89,11 +104,16 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
     }
 
     override fun editCurrencyValue(currency: Currency) {
+        recyclerView.scrollToPosition(0)
         adapter.moveCurrencyToTop(currency)
     }
 
+    override fun onCurrencyUpdated(): Observable<Currency> {
+        return adapter.updateSubject
+    }
+
     override fun onCurrencyClicked(): Observable<Currency> {
-        return adapter.mViewClickSubject
+        return adapter.clickSubject
     }
 
     override fun onRefreshAction(): Observable<Long> {
