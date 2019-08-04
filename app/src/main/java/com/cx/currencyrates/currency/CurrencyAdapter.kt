@@ -68,7 +68,7 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
                 to < from -> currencies.add(to, fromCurrency)
                 else -> currencies.add(to - 1, fromCurrency)
             }
-            notifyDataSetChanged()
+            //notifyDataSetChanged()
         }
     }
 
