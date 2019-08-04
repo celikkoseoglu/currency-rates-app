@@ -3,10 +3,7 @@ package com.cx.currencyrates.currency
 import android.content.Context
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
-import android.support.v7.widget.SimpleItemAnimator
-import android.support.v7.widget.Toolbar
+import android.support.v7.widget.*
 import android.support.v7.widget.helper.ItemTouchHelper
 import android.support.v7.widget.helper.ItemTouchHelper.*
 import android.view.View
@@ -34,10 +31,16 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
 
     private lateinit var presenter: CurrencyPresenter
     private lateinit var adapter: CurrencyAdapter
-    private lateinit var datasetObservable: Observable<Long>
+
+    private var enableRefreshing = true // is used to disable refresh while user is dragging currencies
 
     private val itemTouchHelper by lazy {
         ItemTouchHelper(object : SimpleCallback(UP or DOWN or START or END, 0) {
+
+            override fun getMovementFlags(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder): Int {
+                enableRefreshing = false
+                return super.getMovementFlags(recyclerView, viewHolder)
+            }
 
             override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean {
                 val from = viewHolder.adapterPosition
@@ -48,6 +51,11 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
             }
 
             override fun onSwiped(p0: RecyclerView.ViewHolder, p1: Int) {}
+
+            override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
+                super.clearView(recyclerView, viewHolder)
+                enableRefreshing = true
+            }
         })
     }
 
@@ -55,10 +63,6 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
         super.onCreate(savedInstanceState)
 
         this.window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
-
-        datasetObservable = Observable.interval(0, 1, TimeUnit.SECONDS).doOnNext {
-            recyclerView.announceForAccessibility(getString(R.string.refreshing_currency_values))
-        }
 
         setContentView(R.layout.activity_currency_list)
 
@@ -72,12 +76,6 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
         (recyclerView.itemAnimator as? SimpleItemAnimator
                 ?: throw IllegalArgumentException("RecyclerView animator is not of type SimpleItemAnimator"))
                 .supportsChangeAnimations = false
-
-        presenter = CXApp.from(applicationContext).inject()
-        presenter.register(this)
-        itemTouchHelper.attachToRecyclerView(recyclerView)
-
-
         recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
@@ -88,6 +86,10 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
                 }
             }
         })
+
+        presenter = CXApp.from(applicationContext).inject()
+        presenter.register(this)
+        itemTouchHelper.attachToRecyclerView(recyclerView)
     }
 
     override fun onDestroy() {
@@ -117,7 +119,9 @@ class CurrencyActivity : AppCompatActivity(), CurrencyPresenter.View {
     }
 
     override fun onRefreshAction(): Observable<Long> {
-        return datasetObservable
+        return Observable.interval(0, 1, TimeUnit.SECONDS).takeWhile { enableRefreshing }.repeat().doOnNext {
+            recyclerView.announceForAccessibility(getString(R.string.refreshing_currency_values))
+        }
     }
 
     override fun showRefreshing(isRefreshing: Boolean) {

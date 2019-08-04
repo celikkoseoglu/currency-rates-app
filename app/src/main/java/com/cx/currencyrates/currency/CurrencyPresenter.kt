@@ -9,7 +9,6 @@ import com.cx.currencyrates.currency.model.CurrencyUtils
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
-import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 
 internal class CurrencyPresenter(private val currencyRepository: CurrencyRepository) : BasePresenter<CurrencyPresenter.View>() {
@@ -19,7 +18,6 @@ internal class CurrencyPresenter(private val currencyRepository: CurrencyReposit
     override fun register(view: View) {
         super.register(view)
 
-        // TODO: error handling
         addToUnsubscribe(view.onRefreshAction()
                 .doOnNext { Handler(Looper.getMainLooper()).post { view.showRefreshing(true) } }
                 .switchMapSingle { currencyRepository.currencyRates().subscribeOn(Schedulers.io()) }
@@ -34,8 +32,7 @@ internal class CurrencyPresenter(private val currencyRepository: CurrencyReposit
 
         addToUnsubscribe(view.onCurrencyUpdated()
                 .subscribe { updatedCurrency ->
-                    val processedCurrencies = currencyUtils.processCurrencies(updatedCurrency)
-                    view.showCurrencies(processedCurrencies)
+                    view.showCurrencies(currencyUtils.processCurrencies(updatedCurrency))
                 }
         )
 
