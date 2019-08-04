@@ -61,15 +61,8 @@ internal class CurrencyAdapter(private val context: Context) : RecyclerView.Adap
     }
 
     fun moveItem(from: Int, to: Int) {
-        if (from != to) {
-            val fromCurrency = currencies[from]
-            currencies.removeAt(from)
-            when {
-                to < from -> currencies.add(to, fromCurrency)
-                else -> currencies.add(to - 1, fromCurrency)
-            }
-            //notifyDataSetChanged()
-        }
+        currencies.add(to, currencies.removeAt(from))
+        notifyItemMoved(from, to)
     }
 
     inner class CurrencyViewHolder(view: View) : RecyclerView.ViewHolder(view) {
